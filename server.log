@@ -1,0 +1,6 @@
+2026-07-07 12:00:00 INFO User admin logged in successfully from 192.168.1.5
+2026-07-07 12:01:22 LOGIN_FAILED Brute force attempt from 10.0.0.42
+2026-07-07 12:01:25 LOGIN_FAILED Brute force attempt from 10.0.0.42
+2026-07-07 12:01:30 LOGIN_FAILED Brute force attempt from 10.0.0.42
+2026-07-07 12:01:35 LOGIN_FAILED Brute force attempt from 10.0.0.42
+2026-07-07 12:01:40 LOGIN_FAILED Brute force attempt from 10.0.0.42
