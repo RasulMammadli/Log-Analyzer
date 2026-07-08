@@ -10,12 +10,7 @@ public class LogAnalyzer {
     private static Map<String, Integer> failedAttempts = new HashMap<>();
     private static Set<String> whitelist = new HashSet<>();
 
-    // 🕵️‍♂️ Suspicious usernames commonly targeted by hackers (Credential Stuffing)
-    private static Set<String> suspiciousUsernames = new HashSet<>(Arrays.asList(
-            "admin", "root", "administrator", "guest", "test", "user", "mysql"
-    ));
-
-    // 📊 Global counters for our Security Dashboard
+    // Global counters for our Security Dashboard
     private static int totalLogsProcessed = 0;
     private static int successfulLogins = 0;
     private static int failedLogins = 0;
@@ -29,7 +24,7 @@ public class LogAnalyzer {
         System.out.println("⚡ Cyber-Security Log Analysis Engine Started...");
         System.out.println("------------------------------------------------");
 
-        // Reading the log file from the src folder
+        // Reading the log file
         try (BufferedReader br = new BufferedReader(new FileReader("./server.log"))) {
             String logLine;
             while ((logLine = br.readLine()) != null) {
@@ -37,7 +32,7 @@ public class LogAnalyzer {
                 analyzeLogLine(logLine);
             }
 
-            // 🔥 Print the beautiful metrics summary when done
+            // Print the beautiful metrics summary when done
             printSecurityDashboard();
 
         } catch (IOException e) {
@@ -46,39 +41,42 @@ public class LogAnalyzer {
     }
 
     private static void analyzeLogLine(String logLine) {
-        // Expected Format: IP | TIMESTAMP | USERNAME | STATUS
-        // Example: 192.168.1.50 | 2026-07-08 18:00:01 | admin | FAILED
-        String[] parts = logLine.split(" \\| ");
-        if (parts.length < 4) return;
+        if (logLine == null || logLine.trim().isEmpty()) return;
 
-        String ip = parts[0].trim();
-        String username = parts[2].trim();
-        String status = parts[3].trim();
-
-        // 1. Check Whitelist
-        if (whitelist.contains(ip)) {
-            return;
-        }
-
-        // 2. Detect Suspicious Username Attacks (Critical Threat)
-        if (suspiciousUsernames.contains(username.toLowerCase()) && status.equalsIgnoreCase("FAILED")) {
-            System.out.println("⚠️ CRITICAL WARNING: IP " + ip + " is trying to guess system default username [" + username + "]!");
-            criticalAlertsTriggered++;
-        }
-
-        // 3. Process Login Status
-        if (status.equalsIgnoreCase("SUCCESS")) {
-            successfulLogins++;
-            failedAttempts.remove(ip); // Reset counter on successful login
-        } else if (status.equalsIgnoreCase("FAILED")) {
+        // 1. Uğursuz giriş cəhdlərinin analizi (LOGIN_FAILED)
+        if (logLine.contains("LOGIN_FAILED")) {
             failedLogins++;
+
+            // Sətrin ən sonundakı İP ünvanını tapırıq
+            String[] words = logLine.split(" ");
+            String ip = words[words.length - 1].trim();
+
+            // Whitelist yoxlanışı
+            if (whitelist.contains(ip)) return;
+
             failedAttempts.put(ip, failedAttempts.getOrDefault(ip, 0) + 1);
 
-            // Brute Force Detection
+            // İstifadəçi adı olaraq admin/root yoxlanışı
+            if (logLine.toLowerCase().contains("admin") || logLine.toLowerCase().contains("root")) {
+                criticalAlertsTriggered++;
+                System.out.println("⚠️ CRITICAL ALERT: Malicious credential attempt from IP: " + ip);
+            }
+
+            // Brute Force Təyini (3 və ya daha çox uğursuz cəhd)
             if (failedAttempts.get(ip) >= MAX_ATTEMPTS) {
+                criticalAlertsTriggered++;
                 System.out.println("🚨 ALERT: Brute Force Attack Detected! Hostile IP: " + ip);
                 writeToBlacklist(ip);
             }
+        }
+        // 2. Uğurlu girişlərin analizi
+        else if (logLine.contains("logged in successfully")) {
+            successfulLogins++;
+
+            String[] words = logLine.split(" ");
+            String ip = words[words.length - 1].trim();
+
+            failedAttempts.remove(ip); // Uğurlu giriş olduqda sıfırla
         }
     }
 
